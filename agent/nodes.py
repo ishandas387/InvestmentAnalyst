@@ -1,5 +1,4 @@
 import os
-
 from db.dbmanager import DatabaseManager
 from rich.prompt import Prompt, Confirm
 from rich.console import Console
@@ -76,3 +75,4 @@ def analysis_node(state):
     prompt = f"Analyze these results: {state['db_results']} for the question: {state['question']}"
     res = llm.invoke(prompt)
     return {"analysis": res.content}
+
