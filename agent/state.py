@@ -1,7 +1,13 @@
-from typing import TypedDict, List
+from typing import TypedDict, List, Annotated
+
+from langchain_core.messages import BaseMessage
+from langgraph.graph import add_messages
+
 
 class AgentState(TypedDict):
-    question: str
+    # 'add_messages' ensures new messages are appended to the list, not overwritten
+    messages: Annotated[List[BaseMessage], add_messages]
+
     sql_query: str
     db_results: str
     analysis: str

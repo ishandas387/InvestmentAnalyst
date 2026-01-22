@@ -1,14 +1,17 @@
 import os
-
+import sqlite3
+from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import StateGraph, START, END
 from .state import AgentState
 from .nodes import generate_sql_node, guardrail_node, execute_query_node, analysis_node, human_review_node
+
 
 def should_continue(state: AgentState):
     if state["error"] and state["attempts"] < 3:
         return "generate_sql" # Retry loop
     return "analysis"
-
+conn = sqlite3.connect("agent_memory.db", check_same_thread=False)
+memory = SqliteSaver(conn)
 workflow = StateGraph(AgentState)
 workflow.add_node("generate_sql", generate_sql_node)
 workflow.add_node("guardrail", guardrail_node)
@@ -23,7 +26,7 @@ workflow.add_edge("human_review", "execute_query")
 workflow.add_conditional_edges("execute_query", should_continue)
 workflow.add_edge("analysis", END)
 
-app = workflow.compile()
+app = workflow.compile(checkpointer=memory)
 
 def generate_visual_graph():
     graph_filename = "graph_flow.png"
