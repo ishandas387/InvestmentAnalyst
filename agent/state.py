@@ -13,3 +13,5 @@ class AgentState(TypedDict):
     analysis: str
     error: str
     attempts: int
+    # NEW: Flag to trigger the optional visualization node
+    show_viz: bool
