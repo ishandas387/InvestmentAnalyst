@@ -268,6 +268,13 @@ class DatabaseManager:
 
     def execute_query(self, query):
         with sqlite3.connect(self.db_path) as conn:
+            # This line is the secret sauce:
+            # It allows us to access rows like dictionaries (by column name)
+            conn.row_factory = sqlite3.Row
+
             cursor = conn.cursor()
             cursor.execute(query)
-            return cursor.fetchall()
+            rows = cursor.fetchall()
+
+            # Convert the sqlite3.Row objects into standard Python dicts
+            return [dict(row) for row in rows]

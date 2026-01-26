@@ -3,27 +3,47 @@ import sqlite3
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import StateGraph, START, END
 from .state import AgentState
-from .nodes import generate_sql_node, guardrail_node, execute_query_node, analysis_node, human_review_node
+from .nodes import generate_sql_node, guardrail_node, execute_query_node, analysis_node, human_review_node, \
+    summarize_history_node, visualization_node
 
 
 def should_continue(state: AgentState):
     if state["error"] and state["attempts"] < 3:
         return "generate_sql" # Retry loop
     return "analysis"
+def check_viz_request(state: AgentState):
+    if state.get("show_viz"):
+        return "visualization"
+    return END
+
 conn = sqlite3.connect("agent_memory.db", check_same_thread=False)
 memory = SqliteSaver(conn)
 workflow = StateGraph(AgentState)
+workflow.add_node("summarize", summarize_history_node)
 workflow.add_node("generate_sql", generate_sql_node)
 workflow.add_node("guardrail", guardrail_node)
 workflow.add_node("execute_query", execute_query_node)
 workflow.add_node("analysis", analysis_node)
 workflow.add_node("human_review", human_review_node)
+workflow.add_node("visualization", visualization_node)
 
-workflow.add_edge(START, "generate_sql")
+
+
+workflow.add_edge(START, "summarize")
+workflow.add_edge("summarize", "generate_sql")
 workflow.add_edge("generate_sql", "guardrail")
 workflow.add_edge("guardrail", "human_review")
 workflow.add_edge("human_review", "execute_query")
 workflow.add_conditional_edges("execute_query", should_continue)
+# After analysis, check if we need a chart
+workflow.add_conditional_edges(
+    "analysis",
+    check_viz_request,
+    {
+        "visualization": "visualization",
+        END: END
+    }
+)
 workflow.add_edge("analysis", END)
 
 app = workflow.compile(checkpointer=memory)
