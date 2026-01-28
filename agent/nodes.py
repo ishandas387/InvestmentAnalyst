@@ -24,7 +24,9 @@ def get_model():
     api_key = os.getenv("OPENAI_API_KEY")
 
     return ChatOpenAI(
-        model="openai/gpt-oss-20b:free", # The exact string from OpenRouter
+        #model="openai/gpt-oss-20b:free",
+        model="openai/gpt-oss-120b:free",
+        # The exact string from OpenRouter
         openai_api_key=api_key,
         base_url=base_url,
         # OpenRouter often requires these headers for rankings/analytics
